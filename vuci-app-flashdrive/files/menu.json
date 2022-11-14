@@ -1,0 +1,11 @@
+{
+    "flashdrive":{
+        "title": "Flash Drive",
+        "index": 100
+    },
+    "flashdrive/flashdrive": {
+        "title": "Flash Drive",
+        "view": "vuci-app-flashdrive",
+        "index": 10
+    }
+}
