@@ -6,7 +6,7 @@
     <div v-if="data !== undefined">
       <tableComponent :readData='data'/>
     </div>
-  </div>
+    </div>
 </template>
 <script>
 // Ant design vue
@@ -16,7 +16,7 @@ export default {
     tableComponent
   },
   timers: {
-    update: { time: 1000, autostart: true, repeat: true, immediate: true }
+    update: { time: 2000, autostart: true, repeat: true, immediate: true }
   },
   data () {
     return {
@@ -24,11 +24,11 @@ export default {
     }
   },
   methods: {
-    async update () {
-      await this.$rpc.call('flashdrive', 'get').then(r => {
+    update () {
+      this.$rpc.call('flashdrive', 'get').then(r => {
         const json = Object.values(JSON.parse(r))
         if (Object.keys(json).length === 0) {
-          this.data = undefined
+          this.data = []
         } else {
           this.data = json
         }

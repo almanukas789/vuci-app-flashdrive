@@ -1,24 +1,23 @@
 <template>
   <a-card>
     <a-table v-model="refreshTable" :title="() => 'FlashDrives'"  :columns="flashdrives.columns" :data-source="flashdrives.data" :loading="flashdrives.loading">
-      <template #edit="text">
-        <a-button type="primary"  @click="configPath(text.mountpoint)" style="margin-right: 10px">Browse</a-button>
+      <template #edit="data">
+        <a-button type="primary"  @click="readFiles(data.mountpoint)" style="margin-right: 10px">Browse</a-button>
       </template>
-      <template #circle="text">
-          <a-progress type="circle" :percent="parseInt(text.used_percentage.slice(0,-1))" :format="percent => `${percent} % ` +'(' +text.used + 'b)'" :width="80"  />
-      </template>
-    </a-table>
-    <browseModal
+      <template #circle="data">
+        <a-progress type="circle" :percent="parseInt(data.used_percentage.slice(0,-1))" :format="percent => `${percent} % ` +'(' +data.used + 'b)'" :width="80"  />
+        </template>
+      </a-table>
+      <browseModal
       v-model="refreshModal"
-      :path="path" :allFiles="allFiles"
+      :path="path"
+      :allFiles="allFiles"
       :isVisible="isVisible"
-      :counter="counter"
-      :startingPath="startingPath"
+      :loaded="loaded"
       @readFiles="readFiles"
-      @resetCounter="resetCounter"
-      @incCounter="incCounter"
-      @decCounter="decCounter"
-    />
+      @closeModal="closeModal"
+      @modalRefres="modalRefresh"
+      />
   </a-card>
 </template>
 <script>
@@ -42,6 +41,9 @@ export default {
           v.key = i
           return v
         })
+        if (Object.keys(this.readData).length === 0) {
+          this.isVisible = false
+        }
         this.flashdrives.loading = false
         this.tableRefresh()
       }
@@ -60,13 +62,12 @@ export default {
         ],
         loading: true
       },
-      allFiles: [{ files: [], folder: [] }],
+      loaded: true,
+      allFiles: [],
       isVisible: false,
       path: '',
-      startingPath: '',
       refreshModal: 0,
-      refreshTable: 0,
-      counter: 0
+      refreshTable: 0
     }
   },
   methods: {
@@ -79,55 +80,25 @@ export default {
     openModal () {
       this.isVisible = true
     },
-    convertStringToObject (object, response) {
-      const allFiles = []
-      let tempFolders = ''
-      for (let i = 0; i < Object.keys(response[0]).length; i++) {
-        if (object[i] === '\n') {
-          allFiles.push(tempFolders)
-          tempFolders = ''
-        } else {
-          tempFolders = tempFolders + object[i]
-        }
-      }
-      this.filterFilesAndFolders(allFiles)
-    },
-    filterFilesAndFolders (allFiles) {
-      this.allFiles = [{ files: [], folders: [] }]
-      const resultFiles = allFiles.filter(word => word.includes('.'))
-      const resultFolders = allFiles.filter(word => !word.includes('.'))
-      this.allFiles[0].files.push(resultFiles)
-      this.allFiles[0].folders.push(resultFolders)
-      this.$spin(false)
-      this.openModal()
-      this.modalRefresh()
-    },
     modalRefresh () {
       this.refreshModal += 1
     },
-    incCounter () {
-      this.counter += 1
-    },
-    decCounter () {
-      this.counter -= 1
-    },
-    resetCounter () {
-      this.counter = 0
-      this.closeModal()
-    },
-    configPath (path) {
-      this.startingPath = path
-      this.readFiles(path)
-    },
-    readFiles (path) {
-      this.flashdrives.data = this.readData
-      this.closeModal(path)
-      this.$spin(true)
-      this.path = path
-      this.$rpc.call('flashdrive', 'browse', { path: path }).then(r => {
-        const text = JSON.parse(JSON.stringify(r[0]))
-        this.convertStringToObject(text, r)
+    async readFiles (path) {
+      this.loaded = false
+      this.path = await this.formatPath(path)
+      await this.$rpc.ubus('file', 'list', { path: this.path }).then(result => {
+        this.allFiles = Object.values(result)
+        this.loaded = true
+        this.modalRefresh()
       })
+      this.openModal()
+    },
+    formatPath (path) {
+      if (path.includes('/..')) {
+        path = path.substr(0, path.lastIndexOf('/'))
+        path = path.substr(0, path.lastIndexOf('/'))
+      }
+      return path
     }
   }
 }
