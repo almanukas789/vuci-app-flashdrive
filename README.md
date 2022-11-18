@@ -1,6 +1,6 @@
 # vuci-app-flashdrive
 Application for flashdrive, read, upload,browse,detect
-# V 2.0
+# V 2.0 
 
 [Video Clip 2](https://user-images.githubusercontent.com/75335966/202679235-20f3c397-c4b6-45aa-89bd-51bb6efefda9.webm)
 
