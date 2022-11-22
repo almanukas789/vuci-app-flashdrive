@@ -81,9 +81,6 @@ export default {
     }
   },
   methods: {
-    test () {
-      console.log('asd')
-    },
     format (name) {
       this.downloadFileName = name
       this.downloadPath = this.path
