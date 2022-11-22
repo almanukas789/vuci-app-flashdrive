@@ -1,13 +1,13 @@
 <template>
   <a-modal v-model="modalVisability" @cancel='closeModal()' :width="700" :title="'Path: ' +path" centered>
     <div class="scrollable-container">
-      <div v-if="loaded">
-        <a-card v-if="counter!==0"  hoverable @click="goBack">
+      <div >
+        <a-card :loading="!loaded" v-if="counter!==0" hoverable @click="goBack">
           <a-icon style="font-size: 225%;" type="folder" />
           <strong> /..</strong>
         </a-card>
         <div v-for="item in allFiles[0]" :key="item.id">
-          <a-card v-if="item.type === 'directory'" hoverable>
+          <a-card :loading="!loaded" v-if="item.type === 'directory'"  hoverable>
             <div class="main">
               <div style="width: 80%" @click="updatePath(item.name)" >
                 <a-icon style="font-size: 225%;" type="folder-open" />
@@ -18,7 +18,7 @@
               </div>
             </div>
           </a-card>
-          <a-card v-if="item.type === 'file'">
+          <a-card :loading="!loaded" v-if="item.type === 'file'">
             <div class="main">
               <div style="width: 80%">
                 <a-icon style="font-size: 225%;" type="file-text" />
@@ -34,18 +34,10 @@
       </div>
     </div>
     <template #footer>
-      <div style="height:100px">
-        <vuci-form uci-config="vuci">
-          <vuci-named-section name="main" v-slot="{ s }" :card="false">
-            <vuci-form-item-upload style="margin-left: auto;float:left;" :showUploadList="false" :size="99999999999" :multiple="true"  @change="uploadChange" name="main" :uci-section="s" :path="path + '/'"/>
-          </vuci-named-section>
-          <template #footer>
-            <div>
-              <a-button style="float:right;"  @click="showFolderModal">Create Folder</a-button>
-            </div>
-          </template>
-        </vuci-form>
-      </div>
+      <a-button style="float:right;"  @click="showFolderModal">Create Folder</a-button>
+      <a-upload :file-list="fileList" action="/upload" :data="{path: path +'/'+ fileName}" @change="onUpload" :beforeUpload="beforeUpload" >
+        <a-button style="margin-right: 5px " type="primary"><a-icon type="upload" /> Upload</a-button>
+      </a-upload>
     </template>
     <a-modal v-model="folderModal" :title="'Enter Folder Name'" @ok="createFolder" centered>
       <a-input v-model="folderName"></a-input>
@@ -72,7 +64,12 @@ export default {
       folderModal: false,
       folderName: '',
       downloadFileName: '',
-      counter: 0
+      counter: 0,
+      fileName: '',
+      fileNameDisplay: '',
+      fileList: [],
+      size: 9999999999,
+      multiple: true
     }
   },
   watch: {
@@ -84,6 +81,9 @@ export default {
     }
   },
   methods: {
+    test () {
+      console.log('asd')
+    },
     format (name) {
       this.downloadFileName = name
       this.downloadPath = this.path
@@ -167,6 +167,54 @@ export default {
     },
     resetCounter () {
       this.counter = 0
+    },
+    beforeUpload (file) {
+      this.fileNameDisplay = file.name
+      this.fileName = file.name
+      var n = this.fileName.lastIndexOf('.')
+      var counter = 1
+
+      for (let i = 0; i < this.allFiles[0].length; i++) {
+        if (this.allFiles[0][i].type === 'file') {
+          if (this.allFiles[0][i].name.includes(file.name.split('.')[0] + '(')) {
+            this.fileName = this.fileName.substring(0, n) + this.fileName.substring(n)
+            break
+          } else if (this.allFiles[0][i].name.includes(file.name.split('.')[0])) {
+            for (let j = 0; j < this.allFiles[0].length; j++) {
+              if (this.allFiles[0][j].name.includes(file.name.split('.')[0] + '(' + counter + ')')) {
+                counter++
+              }
+            }
+            this.fileName = this.fileName.substring(0, n) + '(' + counter + ')' + this.fileName.substring(n)
+          }
+        }
+      }
+    },
+    onUpload (info) {
+      const file = info.file
+      const status = file.status
+
+      if (file.size > this.size) {
+        this.$message.error(`File size exceeds ${this.size}B limit.`)
+        return
+      }
+
+      if (!this.multiple && info.fileList.length > 1) {
+        this.$message.error('You can only upload one file.')
+        return
+      }
+
+      this.fileList = info.fileList
+
+      if (status === 'uploading' || status === 'removed') return
+
+      if (status !== 'done') {
+        return
+      }
+
+      this.$message.success(`File '${this.fileNameDisplay}' uploaded.`)
+      this.fileList = []
+      this.readFiles(this.path)
     }
   },
   computed: {
