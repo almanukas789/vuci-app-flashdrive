@@ -2,7 +2,7 @@
 Application for flashdrive, read, upload, browse, detect, download
 
 # V 2.1
-Updated upload button, checks if file exists and adds to the file name incr. number(Example: file.txt, file(1).txt and etc.)
+Updated upload button, checks if file exists and adds to the file name incr. number(Example: file.txt, file(1).txt and etc.), added progress bar, showing  uploading file progress
 
 [opa.webm](https://user-images.githubusercontent.com/75335966/203299221-b3aacad9-bb5a-414a-987f-b9e28538f2d4.webm)
 
